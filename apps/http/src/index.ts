@@ -10,7 +10,7 @@ app.use(morgan('dev'))
 
 app.get('/',async(req:any,res:any)=>{
     res.status(200).json({
-        message:""
+        message:"Hello world"
     })
 })
 
