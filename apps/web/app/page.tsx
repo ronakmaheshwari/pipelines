@@ -40,7 +40,7 @@ export default async function Home(): Promise<React.ReactElement> {
 
   return (
     <div className="flex flex-col min-h-screen min-w-screen p-4 bg-black text-zinc-50">
-      <h1 className="text-2xl font-bold mb-4">User Names:</h1>
+      <h1 className="text-xl font-bold p-2 mb-4">User Names:</h1>
       {response.map((x)=>(
         <div key={x.id}>
           <h1>{x.name}</h1>
