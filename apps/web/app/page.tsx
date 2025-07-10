@@ -1,21 +1,6 @@
 "use server"
 
-import prisma from "@repo/db/client";
-import Image, { type ImageProps } from "next/image";
-
-
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = ({ srcLight, srcDark, className, ...rest }: Props) => (
-  <>
-    <Image {...rest} src={srcLight} className={`block dark:hidden ${className ?? ""}`} />
-    <Image {...rest} src={srcDark} className={`hidden dark:block ${className ?? ""}`} />
-  </>
-);
-
+import prisma from "@repo/db/db";
 
 interface DataBaseSchema {
   id: number;
