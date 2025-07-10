@@ -1,6 +1,8 @@
 "use server"
+
+import prisma from "@repo/db/client";
 import Image, { type ImageProps } from "next/image";
-import prisma from "@repo/db/db"; 
+
 
 type Props = Omit<ImageProps, "src"> & {
   srcLight: string;
