@@ -37,8 +37,8 @@
 #             pm2 delete next-app || true
 #             pm2 start "npm run dev" --name "next-app"
 
-name: Deploy to Stage
-run-name: ${{ github.actor }} is testing out deployment using GitHub Actions 🚀
+name: Deploy to Production
+run-name: ${{ github.actor }} is deploying to production 🚀
 
 on:
   push:
@@ -47,11 +47,11 @@ on:
 
 jobs:
   redeploy_everything:
-    name: Deploying entire thing to staging
+    name: Deploying to production
     runs-on: ubuntu-latest
 
     steps:
-      - name: SSH Into the machine and deploy
+      - name: SSH and deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HOST }}
@@ -59,6 +59,23 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
+            # Ensure Node.js and Corepack (for pnpm) are installed
+            export NODE_VERSION=18
+
+            if ! command -v node >/dev/null 2>&1; then
+              curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+
+            # Enable Corepack (ships with recent Node versions)
+            corepack enable
+
+            # Install pnpm
+            corepack prepare pnpm@latest --activate
+
+            echo "Node version: $(node -v)"
+            echo "PNPM version: $(pnpm -v)"
+
             export NODE_OPTIONS="--max-old-space-size=1024"
 
             cd pipelines
@@ -81,6 +98,6 @@ jobs:
 
             echo "Building Web app..."
             cd ../../web
-            pnpm run build || exit 1  # Could take long, may crash if RAM is low
+            pnpm run build || exit 1
             pm2 delete next-app || true
             pm2 start "npm run start" --name "next-app"
