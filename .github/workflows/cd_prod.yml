@@ -1,42 +1,3 @@
-# name: Deploy to Production
-# run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-
-# on:
-#   push:
-#     branches:
-#       - "prod"
-
-# jobs:
-#   redeploy_everything:
-#     name: Deploying entire thing to staging
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: SSH Into the machine and deploy
-#         uses: appleboy/ssh-action@v1
-#         with:
-#           host: ${{ secrets.HOST }}
-#           username: ${{ secrets.USERNAME }}
-#           key: ${{ secrets.KEY }}
-#           port: ${{ secrets.PORT }}
-#           script: |
-#             cd pipelines
-#             git pull origin main
-#             pnpm install
-#             pnpm run build
-
-#             cd apps/http/dist
-#             pm2 delete http-server || true
-#             pm2 start index.js --name "http-server"
-
-#             cd ../../ws/dist
-#             pm2 delete ws-server || true
-#             pm2 start index.js --name "ws-server"
-
-#             cd ../../web
-#             pm2 delete next-app || true
-#             pm2 start "npm run dev" --name "next-app"
-
 name: Deploy to Production
 run-name: ${{ github.actor }} is deploying to production 🚀
 
@@ -59,19 +20,18 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            # Ensure Node.js and Corepack (for pnpm) are installed
             export NODE_VERSION=18
 
+            # Install Node.js if not already present
             if ! command -v node >/dev/null 2>&1; then
               curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | sudo -E bash -
               sudo apt-get install -y nodejs
             fi
 
-            # Enable Corepack (ships with recent Node versions)
-            corepack enable
-
-            # Install pnpm
-            corepack prepare pnpm@latest --activate
+            # Install pnpm using npm (not corepack)
+            if ! command -v pnpm >/dev/null 2>&1; then
+              sudo npm install -g pnpm
+            fi
 
             echo "Node version: $(node -v)"
             echo "PNPM version: $(pnpm -v)"
