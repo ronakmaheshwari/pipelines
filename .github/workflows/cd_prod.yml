@@ -1,10 +1,49 @@
-name: Deploy to Production
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+# name: Deploy to Production
+# run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+
+# on:
+#   push:
+#     branches:
+#       - "prod"
+
+# jobs:
+#   redeploy_everything:
+#     name: Deploying entire thing to staging
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: SSH Into the machine and deploy
+#         uses: appleboy/ssh-action@v1
+#         with:
+#           host: ${{ secrets.HOST }}
+#           username: ${{ secrets.USERNAME }}
+#           key: ${{ secrets.KEY }}
+#           port: ${{ secrets.PORT }}
+#           script: |
+#             cd pipelines
+#             git pull origin main
+#             pnpm install
+#             pnpm run build
+
+#             cd apps/http/dist
+#             pm2 delete http-server || true
+#             pm2 start index.js --name "http-server"
+
+#             cd ../../ws/dist
+#             pm2 delete ws-server || true
+#             pm2 start index.js --name "ws-server"
+
+#             cd ../../web
+#             pm2 delete next-app || true
+#             pm2 start "npm run dev" --name "next-app"
+
+name: Deploy to Stage
+run-name: ${{ github.actor }} is testing out deployment using GitHub Actions 🚀
 
 on:
   push:
     branches:
-      - "prod"
+      - "main"
 
 jobs:
   redeploy_everything:
@@ -20,19 +59,28 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
+            export NODE_OPTIONS="--max-old-space-size=1024"
+
             cd pipelines
             git pull origin main
             pnpm install
-            pnpm run build
 
-            cd apps/http/dist
+            echo "Building HTTP app..."
+            cd apps/http
+            pnpm run build || exit 1
+            cd dist
             pm2 delete http-server || true
             pm2 start index.js --name "http-server"
 
-            cd ../../ws/dist
+            echo "Building WebSocket app..."
+            cd ../../ws
+            pnpm run build || exit 1
+            cd dist
             pm2 delete ws-server || true
             pm2 start index.js --name "ws-server"
 
+            echo "Building Web app..."
             cd ../../web
+            pnpm run build || exit 1  # Could take long, may crash if RAM is low
             pm2 delete next-app || true
-            pm2 start "npm run dev" --name "next-app"
+            pm2 start "npm run start" --name "next-app"
