@@ -31,6 +31,7 @@ jobs:
             # Install pnpm using npm (not corepack)
             if ! command -v pnpm >/dev/null 2>&1; then
               sudo npm install -g pnpm
+              sudo npm i -g pm2
             fi
 
             echo "Node version: $(node -v)"
