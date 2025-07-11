@@ -8,7 +8,7 @@ on:
 
 jobs:
   redeploy_everything:
-    name: Deploying to production
+    name: Deploying to production server
     runs-on: ubuntu-latest
 
     steps:
@@ -20,45 +20,50 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            export NODE_VERSION=18
+            # Load profile so pm2 is available (in case it's installed via NVM)
+            source ~/.bashrc || true
+            source ~/.profile || true
 
-            # Install Node.js if not already present
-            if ! command -v node >/dev/null 2>&1; then
-              curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | sudo -E bash -
-              sudo apt-get install -y nodejs
-            fi
+            echo "====> Environment Check"
+            echo "PATH: $PATH"
+            which node || echo "Node not found"
+            which pnpm || echo "pnpm not found"
+            which pm2 || echo "pm2 not found"
 
-            # Install pnpm using npm (not corepack)
+            # Ensure pnpm is available
             if ! command -v pnpm >/dev/null 2>&1; then
+              echo "Installing pnpm..."
               sudo npm install -g pnpm
-              sudo npm i -g pm2
             fi
 
-            echo "Node version: $(node -v)"
-            echo "PNPM version: $(pnpm -v)"
-
+            # Limit memory usage during builds
             export NODE_OPTIONS="--max-old-space-size=1024"
 
+            echo "====> Pulling latest code"
             cd pipelines
             git pull origin main
+
+            echo "====> Installing dependencies"
             pnpm install
 
-            echo "Building HTTP app..."
+            echo "====> Building & restarting HTTP server"
             cd apps/http
             pnpm run build || exit 1
             cd dist
             pm2 delete http-server || true
             pm2 start index.js --name "http-server"
 
-            echo "Building WebSocket app..."
+            echo "====> Building & restarting WebSocket server"
             cd ../../ws
             pnpm run build || exit 1
             cd dist
             pm2 delete ws-server || true
             pm2 start index.js --name "ws-server"
 
-            echo "Building Web app..."
+            echo "====> Building & restarting Next.js Web App"
             cd ../../web
             pnpm run build || exit 1
             pm2 delete next-app || true
             pm2 start "npm run start" --name "next-app"
+
+            echo "====> Deployment Completed 🎉"
